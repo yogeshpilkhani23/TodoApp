@@ -1,71 +1,45 @@
-import {
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import React, { useEffect, useState } from 'react';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import React, { useRef } from 'react';
 import { appColors } from '../../utils/colors/index';
 import { scaledValue } from '../../utils/designUtils/index';
-import { useNavigation } from '@react-navigation/native';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useSelector, useDispatch } from 'react-redux';
-import { setList } from '../../store/slice/todoListSlice';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from './../../../firebase';
+import { useTabVisibility } from '../../utils/context/TabVisibilityContext';
 
 const AddTask = () => {
-  const navigation = useNavigation();
-  const [task, setTask] = useState('');
-  console.log('task', task);
-  const [description, setDescription] = useState('');
-  const dispatch = useDispatch();
-  const todoList = useSelector(state => state.todo.list);
-  console.log('todoList', todoList);
+  const { setIsTabVisible } = useTabVisibility();
+  const scrollOffset = useRef(0);
 
-  const save = async () => {
-    try {
-      dispatch(setList([{ task, description, completed: false }, ...todoList]));
-      navigation.goBack();
-    } catch (error) {
-      console.log('Error saving task:', error);
-      alert('Error saving task!');
+  const handleScroll = event => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    const diff = currentOffset - scrollOffset.current;
+
+    if (Math.abs(diff) < 10) return;
+
+    if (diff > 0) {
+      // scrolling down
+      setIsTabVisible(false);
+    } else {
+      // scrolling up
+      setIsTabVisible(true);
     }
+
+    scrollOffset.current = currentOffset;
   };
 
+  const data = Array.from({ length: 50 }, (_, i) => `Item ${i + 1}`);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons
-          name="arrow-back-circle-outline"
-          size={27}
-          color="black"
-          onPress={() => {
-            navigation.goBack();
-          }}
-        />
-        <Text style={styles.title}>Add Task</Text>
-      </View>
-      <View>
-        <TextInput
-          style={styles.input}
-          placeholder="Add a new task...."
-          onChangeText={e => setTask(e)}
-          value={task}
-        />
-      </View>
-      <View>
-        <TextInput
-          style={styles.input}
-          placeholder="Add the description....."
-          onChangeText={e => setDescription(e)}
-          value={description}
-        />
-      </View>
-      <TouchableOpacity onPress={save}>
-        <Text style={styles.saveButton}>Save</Text>
-      </TouchableOpacity>
+    <View style={{ flex: 1 }}>
+      <FlatList
+        data={data}
+        keyExtractor={item => item}
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text>{item}</Text>
+          </View>
+        )}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      />
     </View>
   );
 };

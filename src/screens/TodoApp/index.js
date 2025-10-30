@@ -1,65 +1,50 @@
-import {
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-  FlatList,
-  Image,
-} from 'react-native';
 
+import React, { useRef } from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useTabVisibility } from '../../utils/context/TabVisibilityContext';
 import { appColors } from '../../utils/colors/index';
 import { scaledValue } from '../../utils/designUtils/index';
-import { appRoutes } from '../../utils/routerName/index';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
-import TodoComp from '../../components/TodoComp/index';
-import plusIcon from '../../../assests/images/plusIcon.png';
-import { useSelector, useDispatch } from 'react-redux';
-import { setList } from '../../store/slice/todoListSlice';
 
-const TodoApp = () => {
-  const navigation = useNavigation();
-  const cartTodoList = useSelector(state => state.todo.list);
-  // console.log('cartTodoList', cartTodoList);
-  const dispatch = useDispatch();
+const TodoApp = ({ navigation }) => {
+  const { setIsTabVisible } = useTabVisibility();
+  const scrollOffset = useRef(0);
+
+  const handleScroll = (event) => {
+    const currentOffset = event.nativeEvent.contentOffset.y;
+    const diff = currentOffset - scrollOffset.current;
+
+    if (Math.abs(diff) < 10) return;
+
+    if (diff > 0) {
+      // scrolling down
+      setIsTabVisible(false);
+    } else {
+      // scrolling up
+      setIsTabVisible(true);
+    }
+
+    scrollOffset.current = currentOffset;
+  };
+
+  const data = Array.from({ length: 50 }, (_, i) => `Item ${i + 1}`);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Todo App</Text>
-
-        <TouchableOpacity
-          onPress={() => {
-            navigation.navigate(appRoutes.addTask);
-          }}
-        >
-          <Image
-            source={plusIcon}
-            style={styles.plusIcon}
-            tintColor={appColors.white}
-          />
-        </TouchableOpacity>
-      </View>
+    <View style={{ flex: 1 }}>
       <FlatList
-        data={cartTodoList}
-        numColumns={2}
-        // keyExtractor={item => item?.id}
-        renderItem={({ item, index }) => {
-          console.log('item', item);
-          console.log('index', index);
-          return (
-            <TodoComp
-              task={item.task}
-              description={item.description}
-              delete={() => {
-                dispatch(setList(cartTodoList.filter((_, i) => i !== index)));
-              }}
-            />
-          );
-        }}
+        data={data}
+        keyExtractor={(item) => item}
+        renderItem={({ item }) => (
+          <View style={styles.item}>
+            <Text>{item}</Text>
+          </View>
+        )}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
       />
     </View>
   );
 };
+
 
 export default TodoApp;
 
@@ -84,4 +69,10 @@ const styles = StyleSheet.create({
     height: scaledValue(20),
     width: scaledValue(20),
   },
+   item: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+  },
 });
+
